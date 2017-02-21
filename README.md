@@ -13,12 +13,12 @@ NuGet tasks:
 * **SetVersion** - sets version of Nuget package
   - **Version** - version parameter
 * **GetDep** - gets packages with Nuget dependencies
-* **CleanDep** - cleans packages with Nuget dependencies
-* **RestoreDep** - downloads Nuget packages references by projects 
+* **InstallDep** - downloads Nuget packages references by projects 
 * **UpdateDep** - updates selected package or all packages from specified source to the latest compatible version
   - **Source** - NuGet source repository parameter (shall be used instead of Dependency)
   - **Dependency** - dependency name parameter  
   - **Version** - dependency version parameter
+* **CleanDep** - cleans packages with Nuget dependencies
 * **Publish** - publishes NPM package to global repository
   - **Source** - NuGet source repository parameter
   - **ApiKey** - authorization ApiKey name parameter
@@ -157,7 +157,7 @@ A typical scenario to work with this component may include the following steps:
 
 * Install NuGet packages
 ```powershell
-> Invoke-Task -Task RestoreDep -Component component1
+> Invoke-Task -Task InstallDep -Component component1
 ```
 
 * Compile component with Visual Studio

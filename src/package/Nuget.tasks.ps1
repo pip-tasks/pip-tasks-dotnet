@@ -32,9 +32,9 @@ task NugetCleanDep {
     Clear-NugetPackages -Path .
 }
 
-# Synopsis: Restore nuget dependencies
-task NugetRestoreDep {
-    Restore-NugetPackages -Path .
+# Synopsis: Install nuget dependencies
+task NugetInstallDep {
+    Install-NugetPackages -Path .
 }
 
 # Synopsis: Update nuget dependency

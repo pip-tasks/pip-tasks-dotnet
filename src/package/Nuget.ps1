@@ -200,16 +200,16 @@ PS> Clear-NugetPackages -Path .
 }
 
 
-function Restore-NugetPackages
+function Install-NugetPackages
 {
 <#
 .SYNOPSIS
 
-Restores Nuget packages
+Installs Nuget packages
 
 .DESCRIPTION
 
-Restore-NugetPackages restores Nuget packages
+Install-NugetPackages Installs Nuget packages
 
 .PARAMETER Path
 
@@ -217,7 +217,7 @@ Path to Nuget project (default: .)
 
 .EXAMPLE
 
-PS> Restore-NugetPackages -Path .
+PS> Install-NugetPackages -Path .
 
 #>
     [CmdletBinding()]

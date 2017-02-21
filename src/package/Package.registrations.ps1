@@ -16,5 +16,5 @@ Register-DeclarativeTask -Task GetVersion -Variable Package -Value nuget -CallFi
 Register-DeclarativeTask -Task SetVersion -Variable Package -Value nuget -CallFile $ngtasks -CallTask NugetSetVersion -Component
 Register-DeclarativeTask -Task GetDep -Variable Package -Value nuget -CallFile $ngtasks -CallTask NugetGetDep -Component
 Register-DeclarativeTask -Task CleanDep -Variable Package -Value nuget -CallFile $ngtasks -CallTask NugetCleanDep -Component
-Register-DeclarativeTask -Task RestoreDep -Variable Package -Value nuget -CallFile $ngtasks -CallTask NugetRestoreDep -Component
+Register-DeclarativeTask -Task InstallDep -Variable Package -Value nuget -CallFile $ngtasks -CallTask NugetInstallDep -Component
 Register-DeclarativeTask -Task UpdateDep -Variable Package -Value nuget -CallFile $ngtasks -CallTask NugetUpdateDep -Component
