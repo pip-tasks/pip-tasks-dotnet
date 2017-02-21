@@ -9,6 +9,102 @@
 $NugetPath = "$PSScriptRoot/../../lib/nuget"
 
 
+function Get-NugetVersion
+{
+<#
+.SYNOPSIS
+
+Gets version of Nuget package
+
+.DESCRIPTION
+
+Get-NugetVersion gets version of Nuget project
+
+.PARAMETER Path
+
+Path to Nuget package (default: .)
+
+.EXAMPLE
+
+PS> Get-NugetVersion -Path .
+
+#>
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$false, Position=0, ValueFromPipelineByPropertyName=$true)]
+        [string] $Path = '.'
+    )
+    begin {}
+    process 
+    {
+        Invoke-At $Path {
+            $specs = Get-ChildItem -Path . -Include *.nuspec -Recurse            
+            $versions = @{}
+
+            foreach ($spec in $specs)
+            {
+                [xml]$c = Get-Content -Path $spec.FullName
+                $version = $c.package.metadata.version
+                $versions[$version] = $version
+            }
+
+            $versions.Keys | Sort-Object | Write-Output
+        }
+    }
+    end {}
+}
+
+
+function Set-NugetVersion
+{
+<#
+.SYNOPSIS
+
+Sets version of Nuget package
+
+.DESCRIPTION
+
+Set-NugetVersion sets version of Nuget project
+
+.PARAMETER Path
+
+Path to Nuget package (default: .)
+
+.PARAMETER Version
+
+.EXAMPLE
+
+PS> Set-NugetVersion -Path . -Version 1.1.0
+
+#>
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$false, Position=0, ValueFromPipelineByPropertyName=$true)]
+        [string] $Path = '.',
+        [Parameter(Mandatory=$true, Position=1, ValueFromPipelineByPropertyName=$true)]
+        [string] $Version
+    )
+    begin {}
+    process 
+    {
+        Invoke-At $Path {
+            $specs = Get-ChildItem -Path . -Include *.nuspec -Recurse            
+
+            foreach ($spec in $specs)
+            {
+                [xml]$c = Get-Content -Path $spec.FullName
+                $c.package.metadata.version = $version
+
+                ConvertFrom-Xml -InputObject $c | Set-Content -Path $spec.FullName
+            }
+        }
+    }
+    end {}
+}
+
+
 function Get-NugetPackages
 {
 <#
@@ -44,7 +140,7 @@ PS> Get-NugetPackages -Path .
             $prjs = Get-ChildItem -Filter *.csproj -Recurse
             foreach ($prj in $prjs)
             {
-                $cfg = "$($prj.DirectoryName)\packages.config"
+                $cfg = "$($prj.DirectoryName)/packages.config"
                 if (Test-Path -Path $cfg)
                 {
                     [xml]$ps = Get-Content -Path $cfg
@@ -180,11 +276,132 @@ function Update-NugetPackage
 <#
 .SYNOPSIS
 
-Updates version of Nuget package or packages
+Updates version of Nuget package
 
 .DESCRIPTION
 
-Update-NugetPackage updates versions of Nuget package(s) specified by name or source
+Update-NugetPackage updates version of Nuget package specified by name
+
+.PARAMETER Path
+
+Path to Nuget package (default: .)
+
+.PARAMETER Package
+
+Package name
+
+.PARAMETER Version
+
+Package version
+
+.EXAMPLE
+
+PS> Update-NugetPackage -Path . -Package PipServices.Commons -Version 1.0.50
+
+#>
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$false, Position=0, ValueFromPipelineByPropertyName=$true)]
+        [string] $Path = '.',
+        [Parameter(Mandatory=$false, Position=1, ValueFromPipelineByPropertyName=$true)]
+        [string] $Package,
+        [Parameter(Mandatory=$true, Position=2, ValueFromPipelineByPropertyName=$true)]
+        [string] $Version
+    )
+    begin {}
+    process 
+    {
+        if ($Package -eq $null -or $Package -eq '') { return }
+        if ($Package.Contains('@'))
+        {
+            $pos = $Package.IndexOf('@')
+            $Package = $Package.Substring(0, $pos)
+            $Version = $Package.Substring($pos + 1)
+        }
+
+        Invoke-At $Path {
+            # Update version in nuget packages
+            $pkgs = Get-ChildItem -Path . -Include packages.config -Recurse            
+            foreach ($pkg in $pkgs)
+            {
+                [xml]$c = Get-Content -Path $pkg.Fullname
+
+                $updated = $false
+                foreach ($p in $c.packages.package)
+                {
+                    if ($Package -ne '' -and -not $p.id.Contains($Package))
+                    {
+                        continue
+                    }
+
+                    Write-Host "Updated $($p.id) to version $Version in $($pkg.Name)"
+                    $p.version = $Version
+                    $updated = $true
+                }
+
+                if ($updated)
+                {
+                    ConvertFrom-Xml -InputObject $c | Set-Content -Path $pkg.FullName
+                }
+            }
+
+            # Update version in nuget specs
+            $specs = Get-ChildItem -Path . -Include *.nuspec -Recurse            
+            foreach ($spec in $specs)
+            {
+                [xml]$c = Get-Content -Path $spec.Fullname
+
+                $updated = $false
+
+                foreach ($g in $c.package.metadata.dependencies.group)
+                {
+                    foreach ($d in $g.dependency)
+                    {
+                        if ($Package -ne '' -and -not $d.id.Contains($Package))
+                        {
+                            continue
+                        }
+
+                        Write-Host "Updated $($d.id) to version $Version in $($spec.Name)"
+                        $d.version = $Version
+                        $updated = $true
+                    }
+                }
+
+                foreach ($d in $c.package.metadata.dependencies.dependency)
+                {
+                    if ($Package -ne '' -and -not $d.id.Contains($Package))
+                    {
+                        continue
+                    }
+
+                    Write-Host "Updated $($d.id) to version $Version in $($spec.Name)"
+                    $d.version = $Version
+                    $updated = $true
+                }
+
+                if ($updated)
+                {
+                    ConvertFrom-Xml -InputObject $c | Set-Content -Path $spec.FullName
+                }
+            }
+        }
+    }
+    end {}
+}
+
+
+function Update-NugetLatestPackage
+{
+<#
+.SYNOPSIS
+
+Updates Nuget package to the latest version
+
+.DESCRIPTION
+
+Update-NugetLatestPackage updates Nuget package to the latest version
 
 .PARAMETER Path
 
@@ -194,13 +411,9 @@ Path to Nuget project (default: .)
 
 Package name
 
-.PARAMETER Version
-
-Package version (optional)
-
 .EXAMPLE
 
-PS> Update-NugetPackage -Path . -Package Microsoft.AzureStorage -Version 5.3.0
+PS> Update-NugetLatestPackage -Path . -Package Microsoft.AzureStorage
 
 #>
     [CmdletBinding()]
@@ -209,20 +422,11 @@ PS> Update-NugetPackage -Path . -Package Microsoft.AzureStorage -Version 5.3.0
         [Parameter(Mandatory=$false, Position=0, ValueFromPipelineByPropertyName=$true)]
         [string] $Path = '.',
         [Parameter(Mandatory=$true, Position=1, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
-        [string] $Package,
-        [Parameter(Mandatory=$false, Position=2, ValueFromPipelineByPropertyName=$true)]
-        [string] $Version
+        [string] $Package
     )
     begin {}
     process 
     {        
-        if ($Package.Contains('@'))
-        {
-            $pos = $Package.IndexOf('@')
-            $Package = $Package.Substring(0, $pos)
-            $Version = $Package.Substring($pos + 1)
-        }
-
         Invoke-At $Path {
             $slns = Get-Item -Path *.sln
             if ($slns.Count -eq 0) { throw "VisualStudio solution file was not found" }

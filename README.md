@@ -3,6 +3,9 @@
 This Powershell module brings build tasks for .NET projects into the Pip.Tasks build system
 
 **Nuget** tasks turned on by property **$Package = 'nuget'**
+* **GetVersion** - gets version of Nuget package
+* **SetVersion** - sets version of Nuget package
+* **GetDep** - gets packages with Nuget dependencies
 * **CleanDep** - cleans packages with Nuget dependencies
 * **RestoreDep** - downloads Nuget packages references by projects 
 * **UpdateDep** - updates selected package or all packages from specified source to the latest compatible version
