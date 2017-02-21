@@ -11,12 +11,13 @@ $BuildRoot = $BuildPath
 
 # Synopsis: Gets components deployed on Service Fabric cluster
 task SFGetDeployedComponents {
-    assert ($DeployServer -ne $null) "DeployServer is not set"
+    if ($Server -eq $null) { $Server = $DeployServer  }
+    assert ($Server -ne $null) "Server is not set"
 
     # Set deployment configuration
     if ($DeployConfigs -ne $null)
     {
-        $p = Find-Properties -Properties $DeployConfigs -KeyName Server -Key $DeployServer -DefaultKey local
+        $p = Find-Properties -Properties $DeployConfigs -KeyName Server -Key $Server -DefaultKey local
         Set-Properties -Properties $p -Prefix Deploy
     }
 
@@ -27,12 +28,13 @@ task SFGetDeployedComponents {
 
 # Synopsis: Clears all deployed components on Service Fabric cluster
 task SFResetServer {
-    assert ($DeployServer -ne $null) "DeployServer is not set"
+    if ($Server -eq $null) { $Server = $DeployServer  }
+    assert ($Server -ne $null) "Server is not set"
 
     # Set deployment configuration
     if ($DeployConfigs -ne $null)
     {
-        $p = Find-Properties -Properties $DeployConfigs -KeyName Server -Key $DeployServer -DefaultKey local
+        $p = Find-Properties -Properties $DeployConfigs -KeyName Server -Key $Server -DefaultKey local
         Set-Properties -Properties $p -Prefix Deploy
     }
 
@@ -43,12 +45,13 @@ task SFResetServer {
 
 # Synopsis: Deploys component to Service Fabric cluster
 task SFDeploy {
-    assert ($DeployServer -ne $null) "DeployServer is not set"
+    if ($Server -eq $null) { $Server = $DeployServer  }
+    assert ($Server -ne $null) "Server is not set"
 
     # Set deployment configuration
     if ($DeployConfigs -ne $null)
     {
-        $p = Find-Properties -Properties $DeployConfigs -KeyName Server -Key $DeployServer -DefaultKey local
+        $p = Find-Properties -Properties $DeployConfigs -KeyName Server -Key $Server -DefaultKey local
         Set-Properties -Properties $p -Prefix Deploy
     }
 
@@ -60,12 +63,13 @@ task SFDeploy {
 
 # Synopsis: Undeploys component from Service Fabric cluster
 task SFUndeploy {
-    assert ($DeployServer -ne $null) "DeployServer is not set"
+    if ($Server -eq $null) { $Server = $DeployServer  }
+    assert ($Server -ne $null) "Server is not set"
 
     # Set deployment configuration
     if ($DeployConfigs -ne $null)
     {
-        $p = Find-Properties -Properties $DeployConfigs -KeyName Server -Key $DeployServer -DefaultKey local
+        $p = Find-Properties -Properties $DeployConfigs -KeyName Server -Key $Server -DefaultKey local
         Set-Properties -Properties $p -Prefix Deploy
     }
 

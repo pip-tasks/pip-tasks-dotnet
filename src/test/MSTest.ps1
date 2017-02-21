@@ -43,18 +43,17 @@ PS> Invoke-MSTest -Path .
         [string] $Config = 'Debug',
         [Parameter(Mandatory=$false, Position=2, ValueFromPipelineByPropertyName=$true)]
         [string] $Platform = 'x64',
-        [Parameter(Mandatory=$false, Position=2, ValueFromPipelineByPropertyName=$true)]
-        [string] $Suffix = $null
+        [Parameter(Mandatory=$false, Position=3, ValueFromPipelineByPropertyName=$true)]
+        [string] $Include = './test'
     )
     begin {}
     process 
     {
-        if ($Suffix -eq $null -or $Suffix -eq '') { $Suffix = ".Test" }
         if ($Platform -eq $null -or $Platform -eq '') { $Platform = "x64" }
 
         Invoke-At $Path {
             $tp = Join-Path "bin" $Config
-            $ts = Get-ChildItem . -Recurse | Where-Object { $_.Name.EndsWith("$Suffix.dll") -and $_.FullName.Contains($tp) }
+            $ts = Get-ChildItem $Include -Recurse | Where-Object { $_.Name.EndsWith("Test.dll") -and $_.FullName.Contains($tp) }
             foreach ($t in $ts)
             {
                 $vstest = "$VSPath/CommonExtensions/Microsoft/TestWindow/vstest.console"

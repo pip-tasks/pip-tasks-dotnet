@@ -16,10 +16,16 @@ task MSClean {
 
 # Synopsis: Builds MSBuild project
 task MSBuild {
-    Invoke-MSBuild -Path . -Config $BuildConfig -Platform $BuildPlatform
+    if ($Config -eq $null -or $Config -eq '') { $Config = $BuildConfig }
+    if ($Platform -eq $null -or $Platform -eq '') { $Platform = $BuildPlatform }
+
+    Invoke-MSBuild -Path . -Config $Config -Platform $Platform
 }
 
 # Synopsis: Rebuilds MSBuild project
 task MSRebuild {
-    Invoke-MSRebuild -Path . -Config $BuildConfig -Platform $BuildPlatform
+    if ($Config -eq $null -or $Config -eq '') { $Config = $BuildConfig }
+    if ($Platform -eq $null -or $Platform -eq '') { $Platform = $BuildPlatform }
+
+    Invoke-MSRebuild -Path . -Config $Config -Platform $Platform
 }

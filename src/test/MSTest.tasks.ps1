@@ -14,5 +14,5 @@ task MSTest {
     # MSTest does't understand Any CPU
     if ($BuildPlatform -eq 'Any CPU') { $BuildPlatform = 'x64' }
 
-    Invoke-MSTest -Path . -Config $BuildConfig -Platform $BuildPlatform -Suffix $BuildTest
+    Invoke-MSTest -Path . -Config $BuildConfig -Platform $BuildPlatform -Include $TestInclude
 }

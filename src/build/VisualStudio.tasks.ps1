@@ -16,10 +16,14 @@ task VSClean {
 
 # Synopsis: Builds Visual Studio project
 task VSBuild {
-    Invoke-VSBuild -Path . -Config $BuildConfig
+    if ($Config -eq $null -or $Config -eq '') { $Config = $BuildConfig }
+
+    Invoke-VSBuild -Path . -Config $Config
 }
 
 # Synopsis: Rebuilds Visual Studio project
 task VSRebuild {
-    Invoke-VSRebuild -Path . -Config $BuildConfig
+    if ($Config -eq $null -or $Config -eq '') { $Config = $BuildConfig }
+
+    Invoke-VSRebuild -Path . -Config $Config
 }
