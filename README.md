@@ -86,10 +86,10 @@ Service Fabric tasks:
   - **Server** - name of the server configuration (default: local)
 
 Service Fabric configuration variables:
-**Deploy** - Turns on Service Fabric tasks (must be 'servicefabric')
-**DeployServer** - default name of the server configuration
-**DeployComponent** - override for deployment component name (when it is different than component name)
-**DeployConfigs** - list with server configurations. Each element must have the following fields:
+* **Deploy** - Turns on Service Fabric tasks (must be 'servicefabric')
+* **DeployServer** - default name of the server configuration
+* **DeployComponent** - override for deployment component name (when it is different than component name)
+* **DeployConfigs** - list with server configurations. Each element must have the following fields:
   - **Server** - name of the server configuration that is used to retrieve the configuration
   - **Uri** - Service Fabric cluster Uri
   - **Profile** - Name of deployment profile file (Local.1Node.xml, Cloud.xml or any other)
