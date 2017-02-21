@@ -26,7 +26,7 @@ Path to Nuget project (default: .)
 
 .EXAMPLE
 
-PS> Get-NugetPackages -Path . -Package Microsoft.AzureStorage
+PS> Get-NugetPackages -Path .
 
 #>
     [CmdletBinding()]
