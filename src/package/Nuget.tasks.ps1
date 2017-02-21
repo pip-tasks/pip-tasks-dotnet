@@ -9,6 +9,11 @@
 # Set correct path when invoked from other scripts
 $BuildRoot = $BuildPath
 
+# Synopsis: Gets nuget dependencies
+task NugetGetDep {
+    Get-NugetPackages -Path .
+}
+
 # Synopsis: Clears nuget dependencies
 task NugetCleanDep {
     Clear-NugetPackages -Path .
@@ -28,6 +33,6 @@ task NugetUpdateDep {
     else 
     {
         if ($Source -eq $null -or $Source -eq '') { $Source = $PackageSource }
-        Update-NugetPackage -Source $Source    
+        Update-NugetPackagesFromSource -Source $Source    
     }
 }

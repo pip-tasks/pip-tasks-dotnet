@@ -8,6 +8,62 @@
 
 $NugetPath = "$PSScriptRoot/../../lib/nuget"
 
+
+function Get-NugetPackages
+{
+<#
+.SYNOPSIS
+
+Gets all Nuget packages
+
+.DESCRIPTION
+
+Get-NugetPackages gets all Nuget packages and their versions
+
+.PARAMETER Path
+
+Path to Nuget project (default: .)
+
+.EXAMPLE
+
+PS> Get-NugetPackages -Path . -Package Microsoft.AzureStorage
+
+#>
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$false, Position=0, ValueFromPipelineByPropertyName=$true)]
+        [string] $Path = '.'
+    )
+    begin {}
+    process 
+    {
+        Invoke-At $Path {
+            $deps = @{}
+
+            $prjs = Get-ChildItem -Filter *.csproj -Recurse
+            foreach ($prj in $prjs)
+            {
+                $cfg = "$($prj.DirectoryName)\packages.config"
+                if (Test-Path -Path $cfg)
+                {
+                    [xml]$ps = Get-Content -Path $cfg
+
+                    foreach ($p in $ps.packages.package)
+                    {
+                        $dep = $p.id + '@' + $p.version
+                        $deps[$dep] = $dep
+                    }
+                }
+            }
+
+            $deps.Keys | Sort-Object | Write-Output
+        }
+    }
+    end {}
+}
+
+
 function Clear-NugetPackages
 {
 <#
@@ -46,6 +102,7 @@ PS> Clear-NugetPackages -Path .
     }
     end {}
 }
+
 
 function Restore-NugetPackages
 {
@@ -137,9 +194,9 @@ Path to Nuget project (default: .)
 
 Package name
 
-.PARAMETER source
+.PARAMETER Version
 
-Nuget repository
+Package version (optional)
 
 .EXAMPLE
 
@@ -151,17 +208,123 @@ PS> Update-NugetPackage -Path . -Package Microsoft.AzureStorage -Version 5.3.0
     (
         [Parameter(Mandatory=$false, Position=0, ValueFromPipelineByPropertyName=$true)]
         [string] $Path = '.',
-        [Parameter(Mandatory=$false, Position=1, ValueFromPipelineByPropertyName=$true)]
-        [string[]] $Package = @(),
+        [Parameter(Mandatory=$true, Position=1, ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)]
+        [string] $Package,
         [Parameter(Mandatory=$false, Position=2, ValueFromPipelineByPropertyName=$true)]
+        [string] $Version
+    )
+    begin {}
+    process 
+    {        
+        if ($Package.Contains('@'))
+        {
+            $pos = $Package.IndexOf('@')
+            $Package = $Package.Substring(0, $pos)
+            $Version = $Package.Substring($pos + 1)
+        }
+
+        Invoke-At $Path {
+            $slns = Get-Item -Path *.sln
+            if ($slns.Count -eq 0) { throw "VisualStudio solution file was not found" }
+
+            $extcfg = Test-Path -Path nuget.config
+
+            if ($extcfg)
+            {
+                Copy-Item -Path nuget.config -Destination nuget.temp.config
+            }
+
+            try 
+            {
+                if ($extcfg)
+                {
+                    Invoke-External { 
+                        .$NugetPath/VSS.NuGet.AuthHelper.exe -Config nuget.temp.config -TargetConfig nuget.temp.config
+                    } "Failed to authorize access to nuget repository"
+                }
+
+                $prjs = Get-ChildItem -Filter *.csproj -Recurse
+                foreach ($prj in $prjs)
+                {
+                    $cfg = "$($prj.DirectoryName)\packages.config"
+                    if (Test-Path -Path $cfg)
+                    {
+                        [xml]$ps = Get-Content -Path $cfg
+                        $ids = @()
+                        foreach ($p in $ps.packages.package)
+                        {
+                            if ($p.id.Contains($Package))
+                            {
+                                $ids += $p.id
+                            }
+                        }
+
+                        foreach ($id in $ids)
+                        {
+                            if ($extcfg)
+                            {
+                                Invoke-External { 
+                                    .$NugetPath\Nuget update $prj.FullName -id "$id" -ConfigFile nuget.temp.config -prerelease -safe
+                                } "Failed to update nuget package"
+                            }
+                            else
+                            {
+                                Invoke-External { 
+                                    .$NugetPath\Nuget update $prj.FullName -id "$id" -prerelease -safe
+                                } "Failed to update nuget package"
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if ($extcfg)
+                {
+                    Remove-Item -Path nuget.temp.config
+                }
+            }
+        }
+    }
+    end {}
+}
+
+
+function Update-NugetPackagesFromSource
+{
+<#
+.SYNOPSIS
+
+Updates versions of Nuget packages from specified source
+
+.DESCRIPTION
+
+Update-NugetPackagesFromSource updates versions of Nuget packages from specified source
+
+.PARAMETER Path
+
+Path to Nuget project (default: .)
+
+.PARAMETER Source
+
+Nuget repository
+
+.EXAMPLE
+
+PS> Update-NugetPackagesFromSource -Path . -Source mynugetrepo
+
+#>
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$false, Position=0, ValueFromPipelineByPropertyName=$true)]
+        [string] $Path = '.',
+        [Parameter(Mandatory=$true, Position=1, ValueFromPipelineByPropertyName=$true)]
         [string] $Source
     )
     begin {}
     process 
-    {
-        if ($Package.Count -eq 0 -and $Source -eq '') { throw "Either Package or Source must be set" }
-        if ($Package.Count -ne 0 -and $Source -ne '') { throw "Package and Source cannot not be set at the same time" }
-
+    {        
         Invoke-At $Path {
             $slns = Get-Item -Path *.sln
             if ($slns.Count -eq 0) { throw "VisualStudio solution file was not found" }
@@ -169,58 +332,18 @@ PS> Update-NugetPackage -Path . -Package Microsoft.AzureStorage -Version 5.3.0
             if (Test-Path -Path nuget.config)
             {
                 Copy-Item -Path nuget.config -Destination nuget.temp.config
+
                 try 
                 {
                     Invoke-External { 
                         .$NugetPath/VSS.NuGet.AuthHelper.exe -Config nuget.temp.config -TargetConfig nuget.temp.config
                     } "Failed to authorize access to nuget repository"
 
-                    # Update all dependencies from specified source
-                    if ($Source -ne '')
+                    foreach ($sln in $slns)
                     {        
-                        foreach ($sln in $slns)
-                        {        
-                            Invoke-External { 
-                                .$NugetPath\Nuget update $sln.FullName -configfile nuget.temp.config -prerelease -source $Source -safe
-                            } "Failed to update nuget packages"
-                        }
-                    }
-                    # Update specific dependency if it exists
-                    else 
-                    {
-                        $prjs = Get-ChildItem -Filter *.csproj -Recurse
-                        foreach ($prj in $prjs)
-                        {
-                            $cfg = "$($prj.DirectoryName)\packages.config"
-                            if (Test-Path -Path $cfg)
-                            {
-                                $before = Select-String $cfg -Pattern "<package id=" | Select -ExpandProperty line
-                                $ids = @()
-                                foreach ($value in $before)
-                                {
-                                    $ids += ([xml]$value).package.id;
-                                }
-
-                                foreach ($pkg in $Package)
-                                {
-                                    $id = $null
-                                    foreach ($value in $ids)
-                                    {
-                                        if ($value.Contains($pkg))
-                                        {
-                                            $id = $value
-                                            break;
-                                        }
-                                    }
-                                    if ($id -ne $null)
-                                    {
-                                        Invoke-External { 
-                                            .$NugetPath\Nuget update $prj.FullName -id "$id" -ConfigFile nuget.temp.config -prerelease -safe
-                                        } "Failed to update nuget package"
-                                    }
-                                }
-                            }
-                        }
+                        Invoke-External { 
+                            .$NugetPath\Nuget update $sln.FullName -configfile nuget.temp.config -prerelease -source $Source -safe
+                        } "Failed to update nuget packages"
                     }
                 }
                 finally
@@ -230,56 +353,16 @@ PS> Update-NugetPackage -Path . -Package Microsoft.AzureStorage -Version 5.3.0
             }
             else
             {
-                # Update all dependencies from specified source
-                if ($Source -ne '')
+                foreach ($sln in $slns)
                 {        
-                    foreach ($sln in $slns)
-                    {        
-                        Invoke-External { 
-                            .$NugetPath\Nuget update $sln.FullName -prerelease -source $Source -safe
-                        } "Failed to update nuget packages"
-                    }
-                }
-                # Update specific dependency if it exists
-                else 
-                {
-                    $prjs = Get-ChildItem -Filter *.csproj -Recurse
-                    foreach ($prj in $prjs)
-                    {
-                        $cfg = "$($prj.DirectoryName)\packages.config"
-                        if (Test-Path -Path $cfg)
-                        {
-                            $before = Select-String $cfg -Pattern "<package id=" | Select -ExpandProperty line
-                            $ids = @()
-                            foreach ($value in $before)
-                            {
-                                $ids += ([xml]$value).package.id;
-                            }
-
-                            foreach ($pkg in $Package)
-                            {
-                                $id = $null
-                                foreach ($value in $ids)
-                                {
-                                    if ($value.Contains($pkg))
-                                    {
-                                        $id = $value
-                                        break;
-                                    }
-                                }
-                                if ($id -ne $null)
-                                {
-                                    Invoke-External { 
-                                        .$NugetPath\Nuget update $prj.FullName -id "$id" -prerelease -safe
-                                    } "Failed to update nuget package"
-                                }
-                            }
-                        }
-                    }
+                    Invoke-External { 
+                        .$NugetPath\Nuget update $sln.FullName -prerelease -source $Source -safe
+                    } "Failed to update nuget packages"
                 }
             }
         }
     }
     end {}
 }
+
 
