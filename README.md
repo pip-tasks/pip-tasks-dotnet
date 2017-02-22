@@ -1,6 +1,6 @@
-# <img src="https://github.com/pip-tasks/pip-tasks-ps/raw/master/artifacts/logo.png" alt="Pip.Devs Logo" style="max-width:30%"> <br/> .NET build tasks for Pip.Tasks
+# <img src="https://github.com/pip-tasks/pip-tasks/raw/master/artifacts/logo.png" alt="Pip.Devs Logo" style="max-width:30%"> <br/> .NET build tasks for Pip.Tasks
 
-This Powershell module contains tasks for [Pip.Tasks](https://github.com/pip-tasks/pip-tasks-ps) to build .NET components
+This Powershell module contains tasks for [Pip.Tasks](https://github.com/pip-tasks/pip-tasks) to build .NET components
 
 ### Nuget package management tasks
 
@@ -96,9 +96,9 @@ Service Fabric configuration variables:
 
 ## Installation
 
-* Checkout **pip-tasks-ps** and **pip-tasks-dotnet-ps** modules
+* Checkout **pip-tasks** and **pip-tasks-dotnet** modules
 * Add folder with the modules to **PSModulePath**
-* Import **pip-tasks-dotnet-ps** module. **pip-tasks-ps** will be imported automatically
+* Import **pip-tasks-dotnet** module. **pip-tasks** will be imported automatically
 
 ## Usage
 
@@ -208,7 +208,7 @@ you can use shortcuts like:
 ```
 
 For more information about **Pip.Tasks** build infrastructure read documentation 
-from the master project [here...](https://github.com/pip-tasks/pip-tasks-ps)
+from the master project [here...](https://github.com/pip-tasks/pip-tasks)
 ## Acknowledgements
 
 This module created and maintained by **Sergey Seroukhov**

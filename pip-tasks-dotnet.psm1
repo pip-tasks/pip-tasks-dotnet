@@ -1,6 +1,6 @@
 ########################################################
 ##
-## pip-tasks-dotnet-ps.psm1
+## pip-tasks-dotnet.psm1
 ## Pip.Tasks.DotNet - .NET build tasks for Pip.Tasks
 ## Startup module
 ##
