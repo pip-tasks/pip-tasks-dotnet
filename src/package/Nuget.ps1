@@ -73,6 +73,8 @@ Path to Nuget package (default: .)
 
 .PARAMETER Version
 
+Nuget package version
+
 .EXAMPLE
 
 PS> Set-NugetVersion -Path . -Version 1.1.0
@@ -570,3 +572,72 @@ PS> Update-NugetPackagesFromSource -Path . -Source mynugetrepo
 }
 
 
+function Publish-Nuget
+{
+<#
+.SYNOPSIS
+
+Publishes Nuget packages to global Nuget repository
+
+.DESCRIPTION
+
+Publish-Nuget packages Nuget packages and then pushes them to global Nuget repository
+
+.PARAMETER Path
+
+Path to Nuget package (default: .)
+
+.PARAMETER Source
+
+Nuget global repository (default: https://www.nuget.org/api/v2/package)
+
+.PARAMETER ApiKey
+
+Key to access the global repository
+
+.EXAMPLE
+
+PS> -NugetVersion -Path . -Version 1.1.0
+
+#>
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$false, Position=0, ValueFromPipelineByPropertyName=$true)]
+        [string] $Path = '.',
+        [Parameter(Mandatory=$false, Position=1, ValueFromPipelineByPropertyName=$true)]
+        [string] $Source,
+        [Parameter(Mandatory=$true, Position=2, ValueFromPipelineByPropertyName=$true)]
+        [string] $ApiKey
+    )
+    begin {}
+    process 
+    {
+        if ($Source -eq $null -or $Source -eq '') { $Source = 'https://www.nuget.org/api/v2/package' }
+
+        Invoke-At $Path {
+            $specs = Get-ChildItem -Path . -Include *.nuspec -Recurse            
+
+            foreach ($spec in $specs)
+            {
+                [xml]$c = Get-Content -Path $spec.FullName
+                $version = $c.package.metadata.version
+
+                Invoke-External { 
+                    .$NugetPath\Nuget pack $spec.FullName
+                } "Failed to pack nuget package"
+
+                $pkg = "$($spec.DirectoryName)/$($spec.BaseName).$version.nupkg"
+                if (-not (Test-Path -Path $pkg))
+                {
+                    throw "Package $pkg was not found after packing"
+                }
+
+                Invoke-External { 
+                    .$NugetPath\Nuget push $pkg -Source $Source -ApiKey $ApiKey
+                } "Failed to push nuget package"
+            }
+        }
+    }
+    end {}
+}

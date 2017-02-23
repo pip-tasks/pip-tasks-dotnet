@@ -16,7 +16,6 @@ task NugetGetVersion {
 
 # Synopsis: Sets nuget package version
 task NugetSetVersion {
-    Write-Host "!!!$Version!!!"
     assert ($Version -ne $null) "Version is not set"
 
     Set-NugetVersion -Path . -Version $Version
@@ -55,4 +54,13 @@ task NugetUpdateDep {
             Update-NugetPackage -Package $Dependency -Version $Version
         }
     }
+}
+
+# Synopsis: Publish nuget packages to global repository
+task NugetPublish {
+    if ($Source -eq $null -or $Source -eq '') { $Source = $PackageSource }
+    if ($ApiKey -eq $null -or $ApiKey -eq '') { $ApiKey = $PackageApiKey }
+    assert ($ApiKey -ne $null) "ApiKey is not set"
+
+    Publish-Nuget -Path . -Source $Source -ApiKey $ApiKey
 }
