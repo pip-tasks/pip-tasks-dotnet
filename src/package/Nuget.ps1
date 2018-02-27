@@ -388,6 +388,108 @@ PS> Update-NugetPackage -Path . -Package PipServices.Commons -Version 1.0.50
                     ConvertFrom-Xml -InputObject $c | Set-Content -Path $spec.FullName
                 }
             }
+
+            # Update version in csproj (PackageReference - VS2017+)
+            $projects = Get-ChildItem -Path . -Include *.csproj -Recurse            
+            foreach ($project in $projects)
+            {
+                [xml]$c = Get-Content -Path $project.Fullname
+
+                $updated = $false
+
+                $packageReferences = $c.Project.ItemGroup | Where-Object { $_.PackageReference -ne $null }
+
+                foreach($p in $packageReferences.ChildNodes)
+                {
+                    if ($Package -ne '' -and -not $p.Include.Contains($Package))
+                    {
+                        continue
+                    }
+
+                    Write-Host "Updated $($p.Include) to version $Version in $($project.Name)"
+                    $p.Version = $Version
+                    $updated = $true
+                }
+
+                if ($updated)
+                {
+                    ConvertFrom-Xml -InputObject $c | Set-Content -Path $project.FullName
+                }
+            }
+
+            # Update version in csproj (ItemGroup-Reference)
+            $projects = Get-ChildItem -Path . -Include *.csproj -Recurse            
+            foreach ($project in $projects)
+            {
+                [xml]$c = Get-Content -Path $project.Fullname
+
+                $updated = $false
+
+                $pureVersion = $Version
+                $preReleaseIndex = $Version.IndexOf('-')
+
+                # extract pure version
+                if ($preReleaseIndex -gt 0)
+                {
+                    $pureVersion = $pureVersion.Remove($preReleaseIndex)
+                }
+
+                $references = $c.Project.ItemGroup | Where-Object { $_.Reference -ne $null }
+
+                foreach($r in $references.ChildNodes)
+                {
+                    if ($Package -ne '' -and -not $r.Include.Contains($Package))
+                    {
+                        continue
+                    }
+
+                    # Update Version in Reference.Include
+                    $include = $r.Include
+                    $versionStartIndex = $include.IndexOf("Version")
+                    if ($versionStartIndex -gt 0)
+                    {
+                        $versionLastIndex = $include.IndexOf(',', $versionStartIndex)
+                        if ($versionLastIndex -gt 0)
+                        {
+                            $include = $include.Remove($versionStartIndex, $versionLastIndex - $versionStartIndex)
+                            $include = $include.Insert($versionStartIndex, "Version=" + $pureVersion + ".0")
+
+                            $r.Include = $include
+                            $updated = $true
+
+                            Write-Host "Updated Reference: $($r.Include) in $($project.Name)"
+                        }
+                    }
+
+                    # Update Version in Hint Path
+                    $hint = $r.HintPath
+                    if ($Package -ne '' -and -not $hint.Contains($Package))
+                    {
+                        continue
+                    }
+
+                    $hintPackageStartIndex = $hint.IndexOf($Package)
+                    if ($hintPackageStartIndex -gt 0)
+                    {
+                        $hintPackageLastIndex = $hint.IndexOf('\', $hintPackageStartIndex)
+                        if ($hintPackageLastIndex -gt 0)
+                        {
+                            $hint = $hint.Remove($hintPackageStartIndex, $hintPackageLastIndex - $hintPackageStartIndex)
+                            $hint = $hint.Insert($hintPackageStartIndex, $Package + "." + $Version)
+
+                            $r.HintPath = $hint
+                            $updated = $true
+
+                            Write-Host "Updated Hint Path: $($r.HintPath) in $($project.Name)"
+                        }
+                    }
+                }
+
+                if ($updated)
+                {
+                    ConvertFrom-Xml -InputObject $c | Set-Content -Path $project.FullName
+                }
+            }
         }
     }
     end {}
@@ -467,6 +569,8 @@ PS> Update-NugetLatestPackage -Path . -Package Microsoft.AzureStorage
 
                         foreach ($id in $ids)
                         {
+                            Write-Host "prj=$($prj.FullName); id=$($id); extcfg=$extcfg"
+                            
                             if ($extcfg)
                             {
                                 Invoke-External { 
