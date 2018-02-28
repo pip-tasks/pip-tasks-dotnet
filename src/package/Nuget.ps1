@@ -438,7 +438,7 @@ PS> Update-NugetPackage -Path . -Package PipServices.Commons -Version 1.0.50
 
                 foreach($r in $references.ChildNodes)
                 {
-                    if ($Package -ne '' -and -not $r.Include.Contains($Package))
+                    if ($Package -ne '' -and -not $r.Include.Contains($Package + ","))
                     {
                         continue
                     }
@@ -463,7 +463,7 @@ PS> Update-NugetPackage -Path . -Package PipServices.Commons -Version 1.0.50
 
                     # Update Version in Hint Path
                     $hint = $r.HintPath
-                    if ($Package -ne '' -and -not $hint.Contains($Package))
+                    if ($Package -ne '' -and -not $hint.Contains($Package + "."))
                     {
                         continue
                     }
